@@ -1,0 +1,8 @@
+{
+  "framerate": 16,
+  "images": ["spritesheets/explosion.png"],
+  "frames": {"width":96, "height":96, "regX":0, "regY":0},
+  "animations": {
+    "explode": [0,19]
+  }
+}

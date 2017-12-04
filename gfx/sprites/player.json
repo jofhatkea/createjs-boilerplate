@@ -1,0 +1,15 @@
+{
+    "framerate": 4,
+    "images": ["gfx/sprites/spaceship.png"],
+    "frames": {"width":44, "height":44},
+    "animations":{
+        "neutral":[1],
+        "nLeft":[0],
+        "nRight":[2],
+        "forward":{"frames":[7,13], "speed":0.5},
+        "fLeft":{"frames":[6,12]},
+        "fRight":{"frames":[8,14]},
+        "hit":{"frames":[4,1,4,1,4,1,4,1,4,1], "next":"neutral"}
+        
+    }
+}
