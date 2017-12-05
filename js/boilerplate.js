@@ -104,20 +104,23 @@ function startGame(){
     hero.y = stage.canvas.height-hero.height;
     waveContainer = new createjs.Container();
     waveContainer.x=-300;
-    createjs.Tween.get(waveContainer)
-        .to({
-            x: 300
-        }, 4000).call(function(){
-            createjs.Tween.get(waveContainer, {loop:-1}).to({
-                y: 100
-            }, 1500)
-            .to({x:0}, 3000)
-            .to({y:0}, 1500)
-            .to({x:300}, 3000);
-
-        });
+    moveWave();
     stage.addChild(waveContainer, hero);
     addEnemies(8);
+}
+function moveWave(){
+    createjs.Tween.get(waveContainer, {override:true})
+    .to({
+        x: 300
+    }, 4000).call(function(){
+        createjs.Tween.get(waveContainer, {loop:-1}).to({
+            y: 100
+        }, 1500)
+        .to({x:0}, 3000)
+        .to({y:0}, 1500)
+        .to({x:300}, 3000);
+
+    });
 }
 function addEnemies(howMany){
     let xPos = 0, yPos=0;
@@ -209,6 +212,13 @@ function moveBullets(){
         }
     });
 }
+function resetWave(){
+    waveContainer.x=-300;
+    waveContainer.y=0;
+    settings.enemyHP++;
+    addEnemies(8);
+    moveWave();
+}
 function bulletsHitEnemies(){
     for(let b = bullets.length-1; b>=0; b--){
         for(let e = enemies.length-1; e>=0; e--){
@@ -222,6 +232,9 @@ function bulletsHitEnemies(){
                 if(enemies[e].hp <= 0){
                     waveContainer.removeChild(enemies[e]);
                     enemies.splice(e,1);
+                    if(enemies.length===0){
+                        resetWave();
+                    }
                 }
                 break;
             }
