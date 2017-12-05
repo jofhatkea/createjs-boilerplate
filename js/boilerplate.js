@@ -101,7 +101,7 @@ function addEnemies(howMany){
         temp.x=xPos;
         temp.y=yPos;
         xPos+=65;
-        console.log(xPos, yPos)
+        console.log(xPos, yPos);
         if(xPos > 200){
             xPos=0;
             yPos+=65;
