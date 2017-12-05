@@ -1,3 +1,11 @@
 canvas {
     background-color: black;
+    background-image: url("../gfx/star.background.png");
+    animation: scroll 10s infinite linear;
+}
+
+@keyframes scroll {
+    to {
+        background-position-y: 586px;
+    }
 }

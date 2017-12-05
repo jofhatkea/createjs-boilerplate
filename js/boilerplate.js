@@ -20,7 +20,7 @@ shooter
 */ 
 "use strict";
 
-let stage, queue, preloadText, hero;
+let stage, queue, preloadText, hero, bullets=[];
 
 let canvasOptions = {
     width: 600,
@@ -29,13 +29,17 @@ let canvasOptions = {
 };
 let settings = {
     speed: 4,
-    currentDirection: "neutral"
+    currentDirection: "neutral",
+    bulletSpeed: 8,
+    fireRate: 0,
+    fireRateReset: 10
 };
 let keys = {
     u: false,
     d: false,
     l: false,
-    r: false
+    r: false,
+    fire: false
 };
 
 function setup(){
@@ -58,7 +62,7 @@ function setup(){
     queue.installPlugin(createjs.Sound);
     queue.loadManifest(
         [
-            
+            {id: "b1", src:"gfx/bullet0.png"},
             {id: "heroSS", src:"gfx/sprites/player.json", type:"spritesheet"}
         ]
     );
@@ -119,8 +123,33 @@ function moveHero(){
         settings.currentDirection = "neutral";
     }
 }
+function createBullet(x,y){
+    let temp = new createjs.Bitmap(queue.getResult("b1"));
+    stage.addChild(temp);
+    temp.width=16;
+    temp.height=64;
+    temp.x=x-temp.width/2;
+    temp.y=y-temp.height/2;
+    bullets.push(temp);
+}
+function handleFire(){
+    //if can fire
+    settings.fireRate--;
+    if(keys.fire && settings.fireRate<1){
+        createBullet(hero.x+hero.width/2, hero.y);
+        settings.fireRate = settings.fireRateReset;
+    }
+    
+}
+function moveBullets(){
+    bullets.forEach(function(bullet, i){
+        bullet.y-=settings.bulletSpeed;
+    });
+}
 function tock(e){
     moveHero();
+    handleFire();
+    moveBullets();
     stage.update(e);
 }
 
@@ -138,6 +167,9 @@ function fingerLifted(e){
         case "ArrowDown":
             keys.d=false;
             break;
+        case " ":
+            keys.fire=false;
+            break;
     }
 }
 function fingerDown(e){
@@ -153,6 +185,9 @@ function fingerDown(e){
             break;
         case "ArrowDown":
             keys.d=true;
+            break;
+        case " ":
+            keys.fire=true;
             break;
     }
 }
