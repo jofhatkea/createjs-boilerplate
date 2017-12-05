@@ -4,20 +4,18 @@
 more explosions
 
 shooter
-  more enemies
   more explosions
+  audio
   enemies fire
   powerups
     faster firing
     faster movement
-    new weapon
-    
-  
+    new weapon  
   highscore table (offline)
   input name
   hitstreak multiplier
-  
 */ 
+
 "use strict";
 
 let stage, queue, preloadText, hero, bullets=[], waveContainer, enemies=[];
@@ -32,7 +30,9 @@ let settings = {
     currentDirection: "neutral",
     bulletSpeed: 8,
     fireRate: 0,
-    fireRateReset: 10
+    fireRateReset: 10,
+    enemyHP: 2,
+    bulletDamage: 1
 };
 let keys = {
     u: false,
@@ -86,9 +86,21 @@ function ressourcesLoaded(){
     hero.x=stage.canvas.width/2-hero.width/2;
     hero.y = stage.canvas.height-hero.height;
     waveContainer = new createjs.Container();
+    waveContainer.x=-300;
+    createjs.Tween.get(waveContainer)
+        .to({
+            x: 300
+        }, 4000).call(function(){
+            createjs.Tween.get(waveContainer, {loop:-1}).to({
+                y: 100
+            }, 1500)
+            .to({x:0}, 3000)
+            .to({y:0}, 1500)
+            .to({x:300}, 3000);
 
+        });
     stage.addChild(waveContainer, hero);
-    addEnemies(10);
+    addEnemies(8);
     createjs.Ticker.framerate=60;
     createjs.Ticker.addEventListener("tick", tock);
 }
@@ -98,10 +110,10 @@ function addEnemies(howMany){
     for(let i=0; i<howMany; i++){
         let temp = new createjs.Sprite(queue.getResult("enemySS"), "B1");
         temp.width=temp.height=55;
+        temp.hp = settings.enemyHP;
         temp.x=xPos;
         temp.y=yPos;
         xPos+=65;
-        console.log(xPos, yPos);
         if(xPos > 200){
             xPos=0;
             yPos+=65;
@@ -149,6 +161,7 @@ function createBullet(x,y){
     stage.addChild(temp);
     temp.width=16;
     temp.height=64;
+    temp.damage=settings.bulletDamage;
     temp.x=x-temp.width/2;
     temp.y=y-temp.height/2;
     bullets.push(temp);
@@ -165,9 +178,34 @@ function handleFire(){
 function moveBullets(){
     bullets.forEach(function(bullet, i){
         bullet.y-=settings.bulletSpeed;
+        if(bullet.y < -64){
+            stage.removeChild(bullet);
+            bullets.splice(i, 1);
+        }
     });
 }
+function bulletsHitEnemies(){
+    for(let b = bullets.length-1; b>=0; b--){
+        for(let e = enemies.length-1; e>=0; e--){
+            if(hitTest(bullets[b], enemies[e])){
+                enemies[e].hp-=bullets[b].damage;
+                stage.removeChild(bullets[b]);
+                bullets.splice(b, 1);
+                enemies[e].gotoAndStop("A1");
+                if(enemies[e].hp <= 0){
+                    waveContainer.removeChild(enemies[e]);
+                    enemies.splice(e,1);
+                }
+                break;
+            }
+        }
+    }
+}
+function handleCollisions(){
+    bulletsHitEnemies();
+}
 function tock(e){
+    handleCollisions();
     moveHero();
     handleFire();
     moveBullets();
@@ -212,5 +250,15 @@ function fingerDown(e){
             break;
     }
 }
-
+//stolen from the lectures
+function hitTest(rect1,rect2) {
+    if ( rect1.x >= rect2.x + rect2.width
+        || rect1.x + rect1.width <= rect2.x
+        || rect1.y >= rect2.y + rect2.height
+        || rect1.y + rect1.height <= rect2.y )
+    {
+        return false;
+    }
+    return true;
+}
 window.addEventListener("load", setup);
