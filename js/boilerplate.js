@@ -4,8 +4,6 @@
 more explosions
 
 shooter
-  more explosions
-  audio
   enemies fire
   powerups
     faster firing
@@ -32,7 +30,8 @@ let settings = {
     fireRate: 0,
     fireRateReset: 10,
     enemyHP: 2,
-    bulletDamage: 1
+    bulletDamage: 1,
+    gameRunning:false
 };
 let keys = {
     u: false,
@@ -51,7 +50,7 @@ function setup(){
 
     stage = new createjs.Stage(canvasOptions.id);
 
-    preloadText = new createjs.Text("Loading", "30px Verdana", "#000");
+    preloadText = new createjs.Text("Loading", "30px Verdana", "#FFF");
     preloadText.textBaseline="middle";
     preloadText.textAlign="center";
     preloadText.x=stage.canvas.width/2;
@@ -64,7 +63,11 @@ function setup(){
         [
             {id: "b1", src:"gfx/bullet0.png"},
             {id: "heroSS", src:"gfx/sprites/player.json", type:"spritesheet"},
-            {id: "enemySS", src:"gfx/sprites/enemies.json", type:"spritesheet"}
+            {id: "enemySS", src:"gfx/sprites/enemies.json", type:"spritesheet"},
+            {id: "explosionSS", src:"gfx/sprites/explosion.json", type:"spritesheet"},
+            {id: "boomSound", src:"audio/boom.mp3"},
+            {id: "fireSound", src:"audio/splat.mp3"},
+            {id: "bgSound", src:"audio/danger.mp3"}
         ]
     );
     queue.addEventListener('progress', progress);
@@ -79,6 +82,20 @@ function progress(e){
 
 function ressourcesLoaded(){
     stage.removeChild(preloadText);
+    
+    let button = new createjs.Shape();
+    button.graphics.beginFill("purple").drawRect(0,0, 100, 50);
+    stage.addChild(button);
+    button.addEventListener('click', function(e){
+        stage.removeChild(e.target);
+        startGame();
+    });
+    createjs.Ticker.framerate=60;
+    createjs.Ticker.addEventListener("tick", tock);
+}
+function startGame(){
+    settings.gameRunning=true;
+    createjs.Sound.play("bgSound");
     window.addEventListener('keyup', fingerLifted);
     window.addEventListener('keydown', fingerDown);
     hero = new createjs.Sprite(queue.getResult("heroSS"), settings.currentDirection);
@@ -101,10 +118,7 @@ function ressourcesLoaded(){
         });
     stage.addChild(waveContainer, hero);
     addEnemies(8);
-    createjs.Ticker.framerate=60;
-    createjs.Ticker.addEventListener("tick", tock);
 }
-
 function addEnemies(howMany){
     let xPos = 0, yPos=0;
     for(let i=0; i<howMany; i++){
@@ -156,6 +170,16 @@ function moveHero(){
         settings.currentDirection = "neutral";
     }
 }
+function createExplosion(xCo, yCo){
+    let temp = new createjs.Sprite(queue.getResult("explosionSS"), "explode");
+    temp.x = xCo;
+    temp.y=yCo;
+    stage.addChild(temp);
+    createjs.Sound.play("boomSound");
+    temp.addEventListener("animationend", function(e){
+        stage.removeChild(e.target);
+    });
+}
 function createBullet(x,y){
     let temp = new createjs.Bitmap(queue.getResult("b1"));
     stage.addChild(temp);
@@ -171,6 +195,7 @@ function handleFire(){
     settings.fireRate--;
     if(keys.fire && settings.fireRate<1){
         createBullet(hero.x+hero.width/2, hero.y);
+        createjs.Sound.play("fireSound");
         settings.fireRate = settings.fireRateReset;
     }
     
@@ -187,11 +212,13 @@ function moveBullets(){
 function bulletsHitEnemies(){
     for(let b = bullets.length-1; b>=0; b--){
         for(let e = enemies.length-1; e>=0; e--){
-            if(hitTest(bullets[b], enemies[e])){
+            if(hitTestInContainer(enemies[e], bullets[b])){
                 enemies[e].hp-=bullets[b].damage;
                 stage.removeChild(bullets[b]);
+                createExplosion(bullets[b].x, bullets[b].y);
                 bullets.splice(b, 1);
                 enemies[e].gotoAndStop("A1");
+                
                 if(enemies[e].hp <= 0){
                     waveContainer.removeChild(enemies[e]);
                     enemies.splice(e,1);
@@ -205,10 +232,13 @@ function handleCollisions(){
     bulletsHitEnemies();
 }
 function tock(e){
-    handleCollisions();
-    moveHero();
-    handleFire();
-    moveBullets();
+    if(settings.gameRunning){
+        handleCollisions();
+        moveHero();
+        handleFire();
+        moveBullets();
+    }
+    
     stage.update(e);
 }
 
@@ -256,6 +286,16 @@ function hitTest(rect1,rect2) {
         || rect1.x + rect1.width <= rect2.x
         || rect1.y >= rect2.y + rect2.height
         || rect1.y + rect1.height <= rect2.y )
+    {
+        return false;
+    }
+    return true;
+}
+function hitTestInContainer(rect1,rect2) {
+    if ( rect1.x+rect1.parent.x >= rect2.x + rect2.width
+        || rect1.x+rect1.parent.x + rect1.width <= rect2.x
+        || rect1.y+rect1.parent.y >= rect2.y + rect2.height
+        || rect1.y+rect1.parent.y + rect1.height <= rect2.y )
     {
         return false;
     }
