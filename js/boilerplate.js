@@ -16,7 +16,7 @@ shooter
 
 "use strict";
 
-let stage, queue, preloadText, hero, bullets=[], waveContainer, enemies=[];
+let stage, queue, preloadText, hero, bullets=[], waveContainer, enemies=[], hearts=[];
 
 let canvasOptions = {
     width: 600,
@@ -31,7 +31,10 @@ let settings = {
     fireRateReset: 10,
     enemyHP: 2,
     bulletDamage: 1,
-    gameRunning:false
+    gameRunning:false,
+    level:1,
+    lives: 3,
+    vulnerable: true
 };
 let keys = {
     u: false,
@@ -62,6 +65,7 @@ function setup(){
     queue.loadManifest(
         [
             {id: "b1", src:"gfx/bullet0.png"},
+            {id: "heart", src:"gfx/heart.png"},
             {id: "heroSS", src:"gfx/sprites/player.json", type:"spritesheet"},
             {id: "enemySS", src:"gfx/sprites/enemies.json", type:"spritesheet"},
             {id: "explosionSS", src:"gfx/sprites/explosion.json", type:"spritesheet"},
@@ -79,17 +83,33 @@ function progress(e){
     preloadText.text = "Loading: "+percent+"%";
     stage.update();
 }
+function createButton(text){
+    let cont = new createjs.Container();
 
+    let button = new createjs.Shape();
+    button.graphics.beginFill("purple").drawRect(0,0, 200, 100);
+    
+    let textO = new createjs.Text(text, "16px Courier", "#FFF");
+    textO.textAlign="center";
+    textO.textBaseline="middle";
+    textO.x=100;
+    textO.y=50;
+    cont.regX=100;
+    cont.regY=50;
+    cont.addChild(button, textO);
+    cont.addEventListener('click', function(e){
+        stage.removeChild(e.currentTarget);
+        startGame();
+    });
+    return cont;
+}
 function ressourcesLoaded(){
     stage.removeChild(preloadText);
     
-    let button = new createjs.Shape();
-    button.graphics.beginFill("purple").drawRect(0,0, 100, 50);
-    stage.addChild(button);
-    button.addEventListener('click', function(e){
-        stage.removeChild(e.target);
-        startGame();
-    });
+    let b = createButton("Press To Play");
+    b.x=stage.canvas.width/2;
+    b.y=stage.canvas.height/2;
+    stage.addChild(b);
     createjs.Ticker.framerate=60;
     createjs.Ticker.addEventListener("tick", tock);
 }
@@ -98,6 +118,13 @@ function startGame(){
     createjs.Sound.play("bgSound");
     window.addEventListener('keyup', fingerLifted);
     window.addEventListener('keydown', fingerDown);
+    for(let i=0; i<settings.lives; i++){
+        let h = new createjs.Bitmap(queue.getResult("heart"));
+        h.x=i*30;
+        h.scale=0.5;
+        stage.addChild(h);
+        hearts.push(h);
+    }
     hero = new createjs.Sprite(queue.getResult("heroSS"), settings.currentDirection);
     hero.width=hero.height=44;
     hero.x=stage.canvas.width/2-hero.width/2;
@@ -130,6 +157,10 @@ function addEnemies(howMany){
         temp.hp = settings.enemyHP;
         temp.x=xPos;
         temp.y=yPos;
+        temp.origX=xPos;
+        temp.origY=yPos;
+        temp.crazy=false;
+        temp.crazyFactor = settings.level;
         xPos+=65;
         if(xPos > 200){
             xPos=0;
@@ -241,8 +272,48 @@ function bulletsHitEnemies(){
         }
     }
 }
+function enemiesHitPlayer(){
+    enemies.forEach(function(enemy, i){
+        if(hitTestInContainer(enemy, hero)){
+            playerHit();
+        }
+    });
+}
+function playerHit(){
+    settings.lives--;
+    let h =hearts.pop();
+    stage.removeChild(h);
+    hero.x=stage.canvas.width/2-hero.width/2;
+    hero.y=stage.canvas.height-hero.height;
+    if(settings.lives<1){
+        settings.gameRunning=false;
+        stage.removeAllChildren();
+        let b = createButton("Game Over");
+        stage.addChild(b);
+        b.x=stage.canvas.width/2;
+        b.y=stage.canvas.height/2;
+    }
+}
 function handleCollisions(){
     bulletsHitEnemies();
+    enemiesHitPlayer();
+}
+function goCrazy(){
+    enemies.forEach(function(enemy, i){
+        if(!enemy.crazy){
+            let chance = Math.floor(Math.random()*1000);
+            if(chance <= enemy.crazyFactor){
+                enemy.crazy=true;
+                createjs.Tween.get(enemy).to(
+                    {
+                        x:Math.floor(Math.random()*stage.canvas.width-waveContainer.x), 
+                        y:Math.floor(Math.random()*stage.canvas.height-waveContainer.y)
+                    },1000).to({x:enemy.origX, y:enemy.origY},1000).call(function(){
+                    enemy.crazy=false;
+                });
+            }
+        }
+    });
 }
 function tock(e){
     if(settings.gameRunning){
@@ -250,6 +321,7 @@ function tock(e){
         moveHero();
         handleFire();
         moveBullets();
+        goCrazy();
     }
     
     stage.update(e);
