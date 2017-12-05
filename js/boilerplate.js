@@ -282,6 +282,7 @@ function enemiesHitPlayer(){
 function playerHit(){
     settings.lives--;
     let h =hearts.pop();
+    
     stage.removeChild(h);
     hero.x=stage.canvas.width/2-hero.width/2;
     hero.y=stage.canvas.height-hero.height;
@@ -292,6 +293,9 @@ function playerHit(){
         stage.addChild(b);
         b.x=stage.canvas.width/2;
         b.y=stage.canvas.height/2;
+    } else {
+        settings.vulnerable=false;
+        createjs.Tween.get(hero).to({alpha:0},1000).to({alpha:1},1000).call(function(){settings.vulnerable=true;});
     }
 }
 function handleCollisions(){
@@ -316,7 +320,7 @@ function goCrazy(){
     });
 }
 function tock(e){
-    if(settings.gameRunning){
+    if(settings.gameRunning && settings.vulnerable){
         handleCollisions();
         moveHero();
         handleFire();
