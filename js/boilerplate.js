@@ -12,7 +12,7 @@ shooter
     faster movement
     new weapon
     
-  "space-down-firing"tm
+  
   highscore table (offline)
   input name
   hitstreak multiplier
@@ -20,7 +20,7 @@ shooter
 */ 
 "use strict";
 
-let stage, queue, preloadText, hero, bullets=[];
+let stage, queue, preloadText, hero, bullets=[], waveContainer, enemies=[];
 
 let canvasOptions = {
     width: 600,
@@ -63,7 +63,8 @@ function setup(){
     queue.loadManifest(
         [
             {id: "b1", src:"gfx/bullet0.png"},
-            {id: "heroSS", src:"gfx/sprites/player.json", type:"spritesheet"}
+            {id: "heroSS", src:"gfx/sprites/player.json", type:"spritesheet"},
+            {id: "enemySS", src:"gfx/sprites/enemies.json", type:"spritesheet"}
         ]
     );
     queue.addEventListener('progress', progress);
@@ -84,11 +85,31 @@ function ressourcesLoaded(){
     hero.width=hero.height=44;
     hero.x=stage.canvas.width/2-hero.width/2;
     hero.y = stage.canvas.height-hero.height;
-    stage.addChild(hero);
+    waveContainer = new createjs.Container();
+
+    stage.addChild(waveContainer, hero);
+    addEnemies(10);
     createjs.Ticker.framerate=60;
     createjs.Ticker.addEventListener("tick", tock);
 }
 
+function addEnemies(howMany){
+    let xPos = 0, yPos=0;
+    for(let i=0; i<howMany; i++){
+        let temp = new createjs.Sprite(queue.getResult("enemySS"), "B1");
+        temp.width=temp.height=55;
+        temp.x=xPos;
+        temp.y=yPos;
+        xPos+=65;
+        console.log(xPos, yPos)
+        if(xPos > 200){
+            xPos=0;
+            yPos+=65;
+        }
+        enemies.push(temp);
+        waveContainer.addChild(temp);
+    }
+}
 function moveHero(){
     if(keys.l){
         hero.x-=settings.speed;
