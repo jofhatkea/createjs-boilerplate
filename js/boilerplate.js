@@ -81,13 +81,23 @@ function progress(e){
 }
 
 function ressourcesLoaded(){
-    stage.removeChild(preloadText);
-    
-    let button = new createjs.Shape();
-    button.graphics.beginFill("purple").drawRect(0,0, 100, 50);
+    stage.removeChild(preloadText);  
+  
+    let button = new createjs.Container();
+    let bg = new createjs.Shape();
+    bg.graphics.beginFill("purple").drawRect(0,0, 200, 50);
+    button.addChild(bg);
+    let txt = new createjs.Text("Click to start", "30px Verdana", "#FFF");
+    txt.textBaseline="middle";
+    txt.textAlign="center";
+    txt.x=100;
+    txt.y=25;
+    button.addChild(txt);
+    button.x=canvasOptions.width/2-100;
+    button.y=canvasOptions.height/2-25;
     stage.addChild(button);
     button.addEventListener('click', function(e){
-        stage.removeChild(e.target);
+        stage.removeChild(button);
         startGame();
     });
     createjs.Ticker.framerate=60;
